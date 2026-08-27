@@ -1,0 +1,26 @@
+{
+    "name": "rate-limiter-service",
+    "verson": "0.1.0",
+    "private": true,
+    "type": "module",
+    "engines": {
+        "node": ">=20"
+    },
+    "scripts": {
+        "build": "tsp -p tsconfig.json",
+        "start": "node dist/index.js",
+        "dev": "tsx src/index.ts",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "fastify": "latest"
+    },
+    "devDependencies": {
+        "@types/node": "latest",
+        "tsx": "latest",
+        "typescript": "latest",
+        "vitest": "latest"
+    }
+}
