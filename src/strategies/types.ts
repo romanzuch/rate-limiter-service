@@ -15,5 +15,5 @@ export interface SlidingWindowState {
 
 export interface TokenBucketState {
     tokens: number;
-    lastRefullAt: number;
+    lastRefillAt: number;
 }
