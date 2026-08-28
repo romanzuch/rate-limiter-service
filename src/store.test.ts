@@ -31,5 +31,14 @@ describe("Store", () => {
 
         expect(store.get("user-1", "policy-a")).toEqual({ count: 1 });
         expect(store.get("user-1", "policy-b")).toEqual({ count: 5 });
+    });
+
+    it("keeps state isolated when a policy or key contains the '::' delimiter", () => {
+        const store = new Store<{ count: number }>();
+        store.set("b::c", "a", { count: 1 });
+        store.set("c", "a::b", { count: 2 });
+
+        expect(store.get("b::c", "a")).toEqual({ count: 1 });
+        expect(store.get("c", "a::b")).toEqual({ count: 2 });
     })
 })

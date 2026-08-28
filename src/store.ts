@@ -1,15 +1,16 @@
 export class Store<T> {
-    private state = new Map<string, T>();
-
-    private makeKey(key: string, policy: string): string {
-        return `${policy}::${key}`
-    }
+    private state = new Map<string, Map<string, T>>();
 
     get(key: string, policy: string): T | undefined {
-        return this.state.get(this.makeKey(key, policy));
+        return this.state.get(policy)?.get(key);
     }
 
     set(key: string, policy: string, value: T): void {
-        this.state.set(this.makeKey(key, policy), value);
+        let inner = this.state.get(policy);
+        if (inner === undefined) {
+            inner = new Map<string, T>();
+            this.state.set(policy, inner);
+        }
+        inner.set(key, value);
     }
 }
