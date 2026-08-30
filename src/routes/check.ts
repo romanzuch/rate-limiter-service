@@ -36,10 +36,10 @@ export function registerCheckRoute(app: FastifyInstance, deps: CheckRouteDeps): 
 
         reply.header("X-RateLimit-Limit", result.limit);
         reply.header("X-RateLimit-Remaining", result.remaining);
-        reply.header("X-ReateLimit-Reset", result.resetAt);
+        reply.header("X-RateLimit-Reset", result.resetAt);
 
         if (!result.allowed) {
-            reply.header("Retry-After", Math.max(0, Math.ceil((result.remaining - Date.now()) / 1000)));
+            reply.header("Retry-After", Math.max(0, Math.ceil((result.resetAt - Date.now()) / 1000)));
             return reply.status(429).send({ allowed: false, retryAfter: result.resetAt });
         }
 
