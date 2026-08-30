@@ -145,4 +145,4 @@ config), not on the exact wording of the `error` string.
     an invalid config); the existing 8 are unchanged
   - `src/policies/registry.ts`, `src/strategies/token-bucket.ts` — read for
     context, not changed
-- Commits: `75a777d` (validator), `6065c5b` (route wiring — *fix: validate policy config on POST and PUT /policies*), `ab900d5` (docs)
+- Commits: `f01918f` (validator), `a9df0ca` (route wiring — *fix: validate policy config on POST and PUT /policies*), `409bc77` (docs)
