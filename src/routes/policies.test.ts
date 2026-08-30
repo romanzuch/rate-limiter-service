@@ -116,4 +116,34 @@ describe("/policies", () => {
 
         expect(response.statusCode).toBe(404);
     });
+
+    it("POST rejects a config that fails validation", async () => {
+        const { app, registry } = buildTestApp();
+
+        const response = await app.inject({
+            method: "POST",
+            url: "/policies",
+            headers: { "x-admin-key": ADMIN_KEY },
+            payload: { name: "broken", limit: 1, windowMs: 1000 },
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(registry.get("broken")).toBeUndefined();
+    });
+
+    it("PUT rejects a config that fails validation and leaves the policy unchanged", async () => {
+        const { app, registry } = buildTestApp();
+        registry.create("strict", { strategy: "sliding-window", limit: 1, windowMs: 1000 });
+
+        const response = await app.inject({
+            method: "PUT",
+            url: "/policies/strict",
+            headers: { "x-admin-key": ADMIN_KEY },
+            payload: {},
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(registry.get("strict")).toEqual({ strategy: "sliding-window", limit: 1, windowMs: 1000 });
+    });
+
 })

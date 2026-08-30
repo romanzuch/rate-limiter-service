@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { PolicyRegistry, PolicyAlreadyExistsError, PolicyNotFoundError } from "../policies/registry.js";
-import type { PolicyConfig } from "../strategies/types.js";
+import { isValidPolicyConfig } from "../policies/validate-config.js";
 
 interface PoliciesRouteDeps {
     registry: PolicyRegistry;
@@ -21,16 +21,22 @@ export function registerPoliciesRoutes(app: FastifyInstance, deps: PoliciesRoute
         return { policies: deps.registry.list() };
     });
 
-    app.post<{ Body: { name: string } & PolicyConfig }>(
+    app.post<{ Body: unknown }>(
         "/policies",
         { preHandler: requireAdminKey(deps) },
         async (request, reply) => {
-            const { name, ...config } = request.body ?? ({} as { name: string } & PolicyConfig);
+            const body = (request.body ?? {}) as Record<string, unknown>;
+            const { name, ...config } = body;
+
             if (typeof name !== "string" || !name) {
                 return reply.status(400).send({ error: "name is required" });
             }
+            if (!isValidPolicyConfig(config)) {
+                return reply.status(400).send({ error: "invalid policy config" });
+            }
+
             try {
-                deps.registry.create(name, config as PolicyConfig);
+                deps.registry.create(name, config);
             } catch (err) {
                 if (err instanceof PolicyAlreadyExistsError) {
                     return reply.status(409).send({ error: `policy already exists: ${name}` });
@@ -41,10 +47,13 @@ export function registerPoliciesRoutes(app: FastifyInstance, deps: PoliciesRoute
         }
     );
 
-    app.put<{ Params: { name: string }; Body: PolicyConfig }>(
+    app.put<{ Params: { name: string }; Body: unknown }>(
         "/policies/:name",
         { preHandler: requireAdminKey(deps) },
         async (request, reply) => {
+            if (!isValidPolicyConfig(request.body)) {
+                return reply.status(400).send({ error: "invalid policy config" });
+            }
             try {
                 deps.registry.update(request.params.name, request.body);
             } catch (err) {
@@ -62,12 +71,12 @@ export function registerPoliciesRoutes(app: FastifyInstance, deps: PoliciesRoute
         { preHandler: requireAdminKey(deps) },
         async (request, reply) => {
             try {
-            deps.registry.delete(request.params.name);
+                deps.registry.delete(request.params.name);
             } catch (err) {
-            if (err instanceof PolicyNotFoundError) {
-                return reply.status(404).send({ error: `unknown policy: ${request.params.name}` });
-            }
-            throw err;
+                if (err instanceof PolicyNotFoundError) {
+                    return reply.status(404).send({ error: `unknown policy: ${request.params.name}` });
+                }
+                throw err;
             }
             return reply.status(204).send();
         }
