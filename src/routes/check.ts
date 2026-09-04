@@ -34,15 +34,21 @@ export function registerCheckRoute(app: FastifyInstance, deps: CheckRouteDeps): 
 
         deps.eventBus.emit({ key, policy, allowed: result.allowed, timestamp: Date.now() });
 
+        const resetAt = Number.isFinite(result.resetAt) ? result.resetAt : null;
+
         reply.header("X-RateLimit-Limit", result.limit);
         reply.header("X-RateLimit-Remaining", result.remaining);
-        reply.header("X-RateLimit-Reset", result.resetAt);
-
-        if (!result.allowed) {
-            reply.header("Retry-After", Math.max(0, Math.ceil((result.resetAt - Date.now()) / 1000)));
-            return reply.status(429).send({ allowed: false, retryAfter: result.resetAt });
+        if (resetAt !== null) {
+            reply.header("X-RateLimit-Reset", resetAt);
         }
 
-        return reply.status(200).send({ allowed: true, remaining: result.remaining, resetAt: result.resetAt });
+        if (!result.allowed) {
+            if (resetAt !== null) {
+                reply.header("Retry-After", Math.max(0, Math.ceil((resetAt - Date.now()) / 1000)));
+            }
+            return reply.status(429).send({ allowed: false, retryAfter: resetAt });
+        }
+
+        return reply.status(200).send({ allowed: true, remaining: result.remaining, resetAt });
     });
 }

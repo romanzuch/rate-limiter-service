@@ -87,4 +87,39 @@ describe("POST /check", () => {
             expect.objectContaining({ key: "user-1", policy: "strict", allowed: true })
         );
     });
+
+    it("omits reset headers and nulls resetAt in the body when the limiter reports no reset (allowed)", async () => {
+        const rateLimiter = {
+            check: vi.fn().mockReturnValue({ allowed: true, remaining: 0, resetAt: Infinity, limit: 1}),
+        } as unknown as RateLimiter;
+        const { app } = buildTestApp(rateLimiter);
+
+        const response = await app.inject({
+            method: "POST",
+            url: "/check",
+            payload: { key: "user-1", policy: "static" },
+        });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.headers["x-ratelimit-reset"]).toBeUndefined();
+        expect(JSON.parse(response.body)).toEqual({ allowed: true, remaining: 0, resetAt: null });
+    });
+
+    it("omits Retry-After and nulls retryAfter when the limiter reports no reset (denied)", async () => {
+        const rateLimiter = {
+            check: vi.fn().mockReturnValue({ allowed: false, remaining: 0, resetAt: Infinity, limit: 1 }),
+        } as unknown as RateLimiter;
+        const { app } = buildTestApp(rateLimiter);
+
+        const response = await app.inject({
+            method: "POST",
+            url: "/check",
+            payload: { key: "user-1", policy: "static" },
+        });
+
+        expect(response.statusCode).toBe(429);
+        expect(response.headers["retry-after"]).toBeUndefined();
+        expect(response.headers["x-ratelimit-reset"]).toBeUndefined();
+        expect(JSON.parse(response.body)).toEqual({ allowed: false, retryAfter: null });
+    });
 })
