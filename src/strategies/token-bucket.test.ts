@@ -51,5 +51,19 @@ describe("checkTokenBucket", () => {
         const second = checkTokenBucket(first.nextState, config, now);
 
         expect(second.result.remaining).toBeLessThanOrEqual(config.capacity);
-    })
+    });
+
+    it("reports resetAt of Infinity for a static bucket that never refills", () => {
+        const config = { capacity: 1, refillRatePerMs: 0 };
+        const now = () => 0;
+
+        const first = checkTokenBucket(undefined, config, now);
+        expect(first.result.allowed).toBe(true);
+        expect(first.result.resetAt).toBe(Infinity);
+
+        const second = checkTokenBucket(first.nextState, config, now);
+        expect(second.result.allowed).toBe(false);
+        expect(second.result.resetAt).toBe(Infinity);
+    });
+
 })

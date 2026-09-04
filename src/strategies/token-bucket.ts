@@ -21,7 +21,7 @@ export function checkTokenBucket(
     const tokens = allowed ? refilled - 1 : refilled;
 
     const deficit = Math.max(0, 1 - tokens);
-    const resetAt = config.refillRatePerMs > 0 ? currentTime + deficit / config.refillRatePerMs : currentTime;
+    const resetAt = config.refillRatePerMs > 0 ? currentTime + deficit / config.refillRatePerMs : Infinity;
 
     return {
         result: { allowed, remaining: Math.floor(tokens), resetAt, limit: config.capacity },
