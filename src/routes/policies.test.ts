@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import Fastify from "fastify";
-import { registerPoliciesRoutes } from "./policies.js";
+import { describe, it, expect, vi } from "vitest";
+import Fastify, { FastifyReply, FastifyRequest } from "fastify";
+import { registerPoliciesRoutes, requireAdminKey } from "./policies.js";
 import { PolicyRegistry } from "../policies/registry.js";
 
 const ADMIN_KEY = "test-admin-key"
@@ -145,5 +145,18 @@ describe("/policies", () => {
         expect(response.statusCode).toBe(400);
         expect(registry.get("strict")).toEqual({ strategy: "sliding-window", limit: 1, windowMs: 1000 });
     });
+
+    it("rejects an array-shaped admin-key header even when its only element matches", async () => {
+        const guard = requireAdminKey({ registry: new PolicyRegistry(), adminApiKey: ADMIN_KEY });
+        const request = { headers: { "x-admin-key": [ADMIN_KEY] } } as unknown as FastifyRequest;
+        const send = vi.fn();
+        const status = vi.fn().mockReturnValue({ send });
+        const reply = { status } as unknown as FastifyReply;
+
+        await guard(request, reply);
+
+        expect(status).toHaveBeenCalledWith(401);
+        expect(send).toHaveBeenCalledWith({ error: "invalid or missing admin key" });
+    })
 
 })

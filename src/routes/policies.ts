@@ -7,10 +7,10 @@ interface PoliciesRouteDeps {
     adminApiKey: string;
 }
 
-function requireAdminKey(deps: PoliciesRouteDeps) {
+export function requireAdminKey(deps: PoliciesRouteDeps) {
     return async (request: FastifyRequest, reply: FastifyReply) => {
         const key = request.headers["x-admin-key"];
-        if (key != deps.adminApiKey) {
+        if (key !== deps.adminApiKey) {
             return reply.status(401).send({ error: "invalid or missing admin key" });
         }
     };
