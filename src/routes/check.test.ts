@@ -31,9 +31,13 @@ describe("POST /check", () => {
         expect(JSON.parse(response.body)).toEqual({ allowed: true, remaining: 4, resetAt: 1000 });
     });
 
-    it("returns 429 with Retry-After when denied", async () => {
+    it("returns 429 with Retry-After header and body in seconds when denied", async () => {
+        const FIXED = 1_700_000_000_000;
+        vi.useFakeTimers({ toFake: ["Date"] });
+        vi.setSystemTime(FIXED);
+
         const rateLimiter = {
-            check: vi.fn().mockReturnValue({ allowed: false, remaining: 0, resetAt: Date.now() + 5000, limit: 5 }),
+            check: vi.fn().mockReturnValue({ allowed: false, remaining: 0, resetAt: FIXED + 5000, limit: 5 }),
         } as unknown as RateLimiter;
         const { app } = buildTestApp(rateLimiter);
 
@@ -43,8 +47,11 @@ describe("POST /check", () => {
             payload: { key: "user-1", policy: "strict" }
         });
 
+        vi.useRealTimers();
+
         expect(response.statusCode).toBe(429);
-        expect(response.headers["retry-after"]).toBeDefined();
+        expect(response.headers["retry-after"]).toBe("5");
+        expect(JSON.parse(response.body)).toEqual({ allowed: false, retryAfter: 5 });
     });
 
     it("returns 404 for an unknown policy", async () => {

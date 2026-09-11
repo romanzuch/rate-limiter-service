@@ -43,10 +43,13 @@ export function registerCheckRoute(app: FastifyInstance, deps: CheckRouteDeps): 
         }
 
         if (!result.allowed) {
-            if (resetAt !== null) {
-                reply.header("Retry-After", Math.max(0, Math.ceil((resetAt - Date.now()) / 1000)));
+            const retryAfter = resetAt !== null
+                ? Math.max(0, Math.ceil((resetAt - Date.now()) / 1000))
+                : null; 
+            if (retryAfter !== null) {
+                reply.header("Retry-After", retryAfter);
             }
-            return reply.status(429).send({ allowed: false, retryAfter: resetAt });
+            return reply.status(429).send({ allowed: false, retryAfter });
         }
 
         return reply.status(200).send({ allowed: true, remaining: result.remaining, resetAt });
