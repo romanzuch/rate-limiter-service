@@ -66,4 +66,15 @@ describe("checkTokenBucket", () => {
         expect(second.result.resetAt).toBe(Infinity);
     });
 
+    it("reports resetAt as currentTime for a static bucket that still has tokens", () => {
+        const config = { capacity: 5, refillRatePerMs: 0 };
+        const now = () => 1000;
+
+        const first = checkTokenBucket(undefined, config, now);
+
+        expect(first.result.allowed).toBe(true);
+        expect(first.result.remaining).toBe(4);
+        expect(first.result.resetAt).toBe(1000);
+    });
+
 })
