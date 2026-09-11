@@ -89,10 +89,12 @@ Until that lands, a regression on this line is invisible.
   `refillRatePerMs: 0`, the strategy returns `resetAt = currentTime`, so
   `Retry-After` computes to `0` again — correct arithmetic, misleading input.
   Fixing finding #5 restores this header's honesty in that case.
-- **Header vs. body unit mismatch is intentional for now.** `Retry-After`
-  (header) is delta-seconds; `retryAfter` (429 body) is an epoch-ms timestamp.
-  The plan specifies the body form; revisit only if a consumer needs them
-  aligned.
+- **Header and body now agree in seconds.** Follow-up review finding #2
+  (`docs/code-review/finding-08-resetat-headroom-and-retryafter-units.md`)
+  flagged the mismatch above as a real trap — a client reading `retryAfter`
+  as "seconds to wait" (the name implies a delay) against an epoch-ms value
+  would back off for millennia. The 429 body's `retryAfter` is now the same
+  seconds-delta as the `Retry-After` header, computed once and reused.
 
 ## References
 
@@ -103,3 +105,22 @@ Until that lands, a regression on this line is invisible.
   (the `/check` route step — the correct `result.resetAt` expression)
 - Implementation: `src/routes/check.ts`, `src/routes/check.test.ts`
 - Commit: _pending_ — *fix: source Retry-After from resetAt, not remaining*
+
+## Addendum — follow-up review finding #3 (2026-09-11)
+
+`/code-review a9df0ca~1..HEAD` raised a new angle on the omit-on-never-reset
+behavior from finding #5: some HTTP client retry middleware treats an absent
+`Retry-After` as "retry immediately," which is the exact retry-storm behavior
+this decision record's original fix exists to prevent.
+
+Decision: unchanged. Sending a fabricated finite value (a day, a year, ever)
+does not stop a client that already mishandles "retry-after is absent" from
+mishandling "retry-after is a specific lie" — it just moves the failure from
+"retries too fast" to "user waits behind an artificial number that has no
+relationship to reality." Finding #5's original rejection of sentinel values
+stands for the same reason it did there: absent is the only honest signal
+for "no automatic reset," and a client's own backoff defaults are what should
+fill the gap.
+
+See `docs/code-review/finding-08-resetat-headroom-and-retryafter-units.md` for
+the full discussion (findings #1–#3 of that review).

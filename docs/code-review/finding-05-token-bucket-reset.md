@@ -125,6 +125,14 @@ export function checkTokenBucket(
 
 > Note: when `tokens >= 1` (bucket not yet empty) `deficit` is `0`, so on the finite path `resetAt === currentTime` as before. On the static path it is now `Infinity` even with tokens remaining — correct: a static bucket's count never climbs back up, so there is no future moment it is "reset." The `remaining` field still reports the live count for `X-RateLimit-Remaining`.
 
+**Superseded in part (2026-09-11):** the claim above that `Infinity` is
+> correct "even with tokens remaining" held only because no test exercised
+> a static bucket with headroom. `docs/code-review/finding-08-resetat-headroom-and-retryafter-units.md`
+> narrows this: `resetAt` is `Infinity` only when `deficit > 0` (the bucket
+> is actually at/under one token); a static bucket that still has tokens
+> reports `resetAt === currentTime`, same as a non-static bucket in the same
+> state. The exhausted-bucket case this plan was written for is unchanged.
+
 ### Changed file — `src/strategies/token-bucket.test.ts` — 1 new case
 
 Add this `it` block inside `describe("checkTokenBucket", …)`:
